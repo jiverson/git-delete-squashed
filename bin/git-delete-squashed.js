@@ -3,9 +3,21 @@
 'use strict';
 
 const childProcess = require('child_process');
+const fs = require('fs');
 const Promise = require('bluebird');
 const DEFAULT_BRANCH_NAME = 'master';
-const dryRun = process.argv.some(arg => arg === '--dry-run')
+const dryRun = process.argv.some(arg => arg === '--dry-run');
+let cwd;
+
+if (process.argv[2]) {
+  try {
+    const stats = fs.lstatSync(process.argv[2]);
+    if (stats.isDirectory()) {
+      cwd = process.argv[2];
+    }
+  } catch (e) {
+  }
+}
 
 /**
  * Calls `git` with the given arguments from the CWD
@@ -14,7 +26,7 @@ const dryRun = process.argv.some(arg => arg === '--dry-run')
  */
 function git (args) {
   return new Promise((resolve, reject) => {
-    const child = childProcess.spawn('git', args);
+    const child = childProcess.spawn('git', args, { cwd });
 
     let stdout = '';
     let stderr = '';
@@ -45,11 +57,10 @@ git(['for-each-ref', 'refs/heads/', '--format=%(refname:short)'])
   .tap(branchNamesToDelete => branchNamesToDelete.length && git(['checkout', DEFAULT_BRANCH_NAME]))
   .mapSeries(branchName => {
     if (dryRun) {
-      return branchName + ' will be removed'
+      return branchName + ' will be removed';
     } else {
-      return git(['branch', '-D', branchName])
+      return; git(['branch', '-D', branchName]);
     }
   })
   .mapSeries(stdout => console.log(stdout))
   .catch(err => console.error(err.cause || err));
-
