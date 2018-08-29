@@ -59,7 +59,7 @@ git(['for-each-ref', 'refs/heads/', '--format=%(refname:short)'])
     if (dryRun) {
       return branchName + ' will be removed';
     } else {
-      return; git(['branch', '-D', branchName]);
+      return git(['branch', '-D', branchName]);
     }
   })
   .mapSeries(stdout => console.log(stdout))
